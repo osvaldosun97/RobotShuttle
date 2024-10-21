@@ -8,11 +8,7 @@ import torch
 
 # Step 1: Set the device (GPU or CPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-num_devices = torch.cuda.device_count()
-
-print(f"Number of available CUDA devices: {num_devices}")
-for i in range(num_devices):
-    print(f"Device {i}: {torch.cuda.get_device_name(i)}")
+    
 # Step 2: Define paths for the config and checkpoint files
 config_file = './configs/second/second_hv_secfpn_8xb6-80e_kitti-3d-3class.py'
 checkpoint_file = './checkpoints/second_hv_secfpn_8xb6-80e_kitti-3d-3class-b086d0a3.pth'
@@ -40,12 +36,14 @@ point_cloud = load_pcd_file(pcd_file)
 pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(point_cloud[:, :3])  # Only use x, y, z
 
-# Step 6: Perform inference (object detection)
-# Format the point cloud for the SECOND model
+# Step 6: Prepare data for the SECOND model
+# The SECOND model requires a dictionary with 'points' as the key
 data = {'points': [torch.tensor(point_cloud[:, :3]).float().to(device)]}
-result = inference_detector(model, data)
 
-# Step 7: Process and display the detected objects
+# Step 7: Perform inference (object detection)
+result, data = inference_detector(model, data)
+
+# Step 8: Process and display the detected objects
 # Classes for the dataset (e.g., Car, Pedestrian, Cyclist)
 class_names = model.dataset_meta['classes']
 threshold = 0.5  # Confidence threshold for displaying the detected objects
@@ -53,7 +51,6 @@ threshold = 0.5  # Confidence threshold for displaying the detected objects
 print(f"Detected objects in {pcd_file}:")
 
 # Helper function to compute the 8 corners of a bounding box
-
 
 def compute_bounding_box_corners(bbox):
     bbox = bbox.tensor.cpu().numpy()  # Convert to numpy array
